@@ -3,6 +3,7 @@
 
 #include "hl2mp/hl2mp_player.h"
 
+#include "zmr/zmr_viewmodel.h"
 #include "zmr/zmr_player_shared.h"
 #include "zmr/zmr_entities.h"
 #include "zmr/weapons/zmr_base.h"
@@ -53,6 +54,10 @@ public:
 
     void SetPlayerModel( void );
     bool ValidatePlayerModel( const char* );
+    CZMViewModel* GetViewModel( int vmIndex = VMINDEX_WEP ) const;
+    virtual void CreateViewModel( int vmIndex = VMINDEX_WEP ) OVERRIDE;
+    void SetHandsModel( const char* model );
+    const char* TranslatePlayerModelToHands( const char* playermodel );
 
     virtual void FlashlightTurnOn() OVERRIDE;
 

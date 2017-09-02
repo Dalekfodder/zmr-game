@@ -136,3 +136,9 @@ enum ObjRecipient_t
 
     OBJRECIPIENT_MAX
 };
+
+
+// m_hViewModel
+#define VMINDEX_WEP         0
+#define VMINDEX_HANDS       1
+

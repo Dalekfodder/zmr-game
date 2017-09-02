@@ -3,6 +3,7 @@
 #include <vphysics/constraints.h>
 
 
+#include "zmr/zmr_viewmodel.h"
 #include "zmr/zmr_gamerules.h"
 #include "zmr/weapons/zmr_base.h"
 #include "zmr/zmr_shareddefs.h"
@@ -180,6 +181,38 @@ void CZMBaseWeapon::PrimaryAttack( void )
 
     // Add our view kick in
     AddViewKick();
+}
+
+void CZMBaseWeapon::SetWeaponVisible( bool visible )
+{
+    CBaseViewModel* vm = nullptr;
+    CBaseViewModel* vmhands = nullptr;
+
+    CZMPlayer* pOwner = GetPlayerOwner();
+    if ( pOwner )
+    {
+        vm = pOwner->GetViewModel( VMINDEX_WEP );
+        vmhands = pOwner->GetViewModel( VMINDEX_HANDS );
+
+#ifndef CLIENT_DLL
+        Assert( vm == pOwner->GetViewModel( m_nViewModelIndex ) );
+#endif
+    }
+
+    if ( visible )
+    {
+        RemoveEffects( EF_NODRAW );
+
+        if ( vm ) vm->RemoveEffects( EF_NODRAW );
+        if ( vmhands && GetWpnData().m_bUseHands ) vmhands->RemoveEffects( EF_NODRAW );
+    }
+    else
+    {
+        AddEffects( EF_NODRAW );
+
+        if ( vm ) vm->AddEffects( EF_NODRAW );
+        if ( vmhands ) vmhands->AddEffects( EF_NODRAW );
+    }
 }
 
 #ifdef CLIENT_DLL
@@ -402,6 +435,51 @@ void CZMBaseWeapon::Drop( const Vector& vecVelocity )
         UTIL_Remove( this );
     }
 #endif
+}
+
+bool CZMBaseWeapon::Deploy()
+{
+    bool res = BaseClass::Deploy();
+
+    if ( res && GetWpnData().m_bUseHands )
+    {
+        CZMPlayer* pOwner = GetPlayerOwner();
+
+        if ( pOwner )
+        {
+            CBaseViewModel* vmhands = pOwner->GetViewModel( VMINDEX_HANDS );
+
+            if ( vmhands )
+            {
+                vmhands->RemoveEffects( EF_NODRAW );
+            }
+        }
+    }
+
+    return res;
+}
+
+bool CZMBaseWeapon::Holster( CBaseCombatWeapon* pSwitchTo )
+{
+    bool res = BaseClass::Holster( pSwitchTo );
+
+    if ( res )
+    {
+        CZMBaseWeapon* pSwitch = static_cast<CZMBaseWeapon*>( pSwitchTo );
+
+
+        CZMPlayer* pOwner = GetPlayerOwner();
+
+        if ( pOwner && pSwitch && !pSwitch->GetWpnData().m_bUseHands )
+        {
+            CBaseViewModel* vmhands = pOwner->GetViewModel( VMINDEX_HANDS );
+
+            if ( vmhands )
+                vmhands->AddEffects( EF_NODRAW );
+        }
+    }
+
+    return res;
 }
 
 void CZMBaseWeapon::Equip( CBaseCombatCharacter* pCharacter )

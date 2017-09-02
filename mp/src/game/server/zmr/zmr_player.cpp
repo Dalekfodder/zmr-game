@@ -15,6 +15,9 @@
 #include "zmr_player.h"
 
 
+#define VMHANDS_FALLBACKMODEL       "models/weapons/armies.mdl"
+
+
 static ConVar zm_sv_randomplayermodel( "zm_sv_randomplayermodel", "1", FCVAR_NOTIFY | FCVAR_ARCHIVE, "If player has an invalid model, use a random one. Temporary 'fix' for model choosing not working." );
 
 ConVar zm_sv_antiafk( "zm_sv_antiafk", "90", FCVAR_NOTIFY | FCVAR_ARCHIVE, "If the player is AFK for this many seconds, put them into spectator mode. 0 = disable" );
@@ -114,6 +117,9 @@ void CZMPlayer::Precache( void )
     //PrecacheScriptSound( "NPC_MetroPolice.Die" );
     //PrecacheScriptSound( "NPC_CombineS.Die" );
     //PrecacheScriptSound( "NPC_Citizen.die" );
+
+
+    PrecacheModel( VMHANDS_FALLBACKMODEL );
 }
 
 extern ConVar zm_sv_antiafk_punish;
@@ -342,6 +348,12 @@ void CZMPlayer::RemoveAllItems( bool removeSuit )
     {
         GetViewModel()->AddEffects( EF_NODRAW );
     }
+
+    CPredictedViewModel* vmhands = GetViewModel( VMINDEX_HANDS );
+    if ( vmhands )
+    {
+        vmhands->AddEffects( EF_NODRAW );
+    }
 }
 
 void CZMPlayer::FlashlightTurnOn()
@@ -415,6 +427,73 @@ bool CZMPlayer::ValidatePlayerModel( const char* szModelName )
     }
 
     return false;
+}
+
+CZMViewModel* CZMPlayer::GetViewModel( int index ) const
+{
+    return static_cast<CZMViewModel*>( m_hViewModel[index].Get() );
+}
+
+void CZMPlayer::CreateViewModel( int index )
+{
+    // We should never create more than the first index.
+    Assert( index == 0 );
+
+
+    if ( GetViewModel( VMINDEX_WEP ) != nullptr )
+    {
+        if ( GetViewModel( VMINDEX_HANDS ) == nullptr )
+        {
+            Warning( "Weapon viewmodel exists but hands don't!!\n" );
+        }
+
+        return;
+    }
+
+
+    CZMViewModel* vm = static_cast<CZMViewModel*>( CreateEntityByName( "zm_viewmodel" ) );
+    
+    if ( vm )
+    {
+        vm->SetAbsOrigin( GetAbsOrigin() );
+        vm->SetOwner( this );
+        vm->SetIndex( VMINDEX_WEP );
+        DispatchSpawn( vm );
+        vm->FollowEntity( this, false );
+        m_hViewModel.Set( VMINDEX_WEP, vm );
+
+
+        CZMViewModel* vmhands = static_cast<CZMViewModel*>( CreateEntityByName( "zm_viewmodel" ) );
+    
+        if ( vmhands )
+        {
+            vmhands->SetAbsOrigin( GetAbsOrigin() );
+            vmhands->SetOwner( this );
+            vmhands->SetIndex( VMINDEX_HANDS );
+            DispatchSpawn( vmhands );
+            vmhands->FollowEntity( vm, true ); // Sets moveparent.
+            m_hViewModel.Set( VMINDEX_HANDS, vmhands );
+        }
+    }
+
+    SetHandsModel( nullptr );
+}
+
+void CZMPlayer::SetHandsModel( const char* model )
+{
+    CPredictedViewModel* vmhands = GetViewModel( VMINDEX_HANDS );
+
+    if ( !vmhands ) return;
+
+
+    vmhands->SetWeaponModel( (model && *model) ? model : VMHANDS_FALLBACKMODEL, nullptr );
+}
+
+const char* CZMPlayer::TranslatePlayerModelToHands( const char* model )
+{
+    // ZMRTODO: Actually translate 'em.
+
+    return VMHANDS_FALLBACKMODEL;
 }
 
 void CZMPlayer::Spawn()

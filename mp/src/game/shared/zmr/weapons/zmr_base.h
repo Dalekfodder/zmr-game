@@ -39,7 +39,7 @@ public:
     virtual void FireBullets( const FireBulletsInfo_t &info ) OVERRIDE;
     virtual void PrimaryAttack() OVERRIDE;
     
-
+    virtual void SetWeaponVisible( bool visible ) OVERRIDE;
     virtual bool IsPredicted() const OVERRIDE { return true; };
 
 #ifdef CLIENT_DLL
@@ -69,7 +69,9 @@ public:
     // Let us always select this weapon even when we don't have any ammo for it.
     virtual bool AllowsAutoSwitchFrom( void ) const OVERRIDE { return false; };
     virtual void Drop( const Vector& ) OVERRIDE;
-
+    
+    virtual bool Deploy() OVERRIDE;
+    virtual bool Holster( CBaseCombatWeapon* pSwitchTo ) OVERRIDE;
     // Add weapon slot flag.
     virtual void Equip( CBaseCombatCharacter* ) OVERRIDE;
 
